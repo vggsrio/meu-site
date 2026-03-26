@@ -76,8 +76,8 @@
         .control-bar {
             background-color: var(--bg-controls);
             border-top: 1px solid var(--border-color);
-            padding-bottom: calc(env(safe-area-inset-bottom) + 0.5rem);
-            padding-top: 0.75rem;
+            padding-bottom: calc(env(safe-area-inset-bottom) + 0.25rem);
+            padding-top: 0.5rem;
         }
 
         .sidebar {
@@ -178,30 +178,32 @@
 
         <!-- Footer: Player e Velocidade -->
         <footer class="control-bar px-6 shrink-0 z-10 shadow-2xl">
-            <div class="max-w-4xl mx-auto flex flex-col md:flex-row items-center justify-between gap-6">
+            <div class="max-w-4xl mx-auto flex flex-row items-center justify-between gap-4">
                 
-                <!-- Controles de Reprodução -->
-                <div class="flex items-center gap-8">
+                <!-- Controles de Reprodução (Botão de Play Menor) -->
+                <div class="flex items-center gap-6">
                     <button id="prevBtn" class="p-1 opacity-50 hover:opacity-100 transition-opacity">
-                        <svg class="w-8 h-8" fill="currentColor" viewBox="0 0 20 20"><path d="M8.445 14.832A1 1 0 0010 14v-2.798l5.445 3.63A1 1 0 0017 14V6a1 1 0 00-1.555-.832L10 8.798V6a1 1 0 00-1.555-.832l-6 4a1 1 0 000 1.664l6 4z"/></svg>
+                        <svg class="w-7 h-7" fill="currentColor" viewBox="0 0 20 20"><path d="M8.445 14.832A1 1 0 0010 14v-2.798l5.445 3.63A1 1 0 0017 14V6a1 1 0 00-1.555-.832L10 8.798V6a1 1 0 00-1.555-.832l-6 4a1 1 0 000 1.664l6 4z"/></svg>
                     </button>
                     
-                    <button id="playPauseBtn" class="bg-amber-500 text-black p-3.5 rounded-full hover:bg-amber-400 shadow-xl transition-all active:scale-90">
-                        <svg id="playIcon" class="w-8 h-8" fill="currentColor" viewBox="0 0 20 20"><path d="M4.018 14L14.41 8 4.018 2z"/></svg>
-                        <svg id="pauseIcon" class="w-8 h-8 hidden" fill="currentColor" viewBox="0 0 20 20"><path d="M6 4h4v12H6V4zm6 0h4v12h-4V4z"/></svg>
+                    <button id="playPauseBtn" class="bg-amber-500 text-black p-2.5 rounded-full hover:bg-amber-400 shadow-xl transition-all active:scale-90">
+                        <svg id="playIcon" class="w-7 h-7" fill="currentColor" viewBox="0 0 20 20"><path d="M4.018 14L14.41 8 4.018 2z"/></svg>
+                        <svg id="pauseIcon" class="w-7 h-7 hidden" fill="currentColor" viewBox="0 0 20 20"><path d="M6 4h4v12H6V4zm6 0h4v12h-4V4z"/></svg>
                     </button>
 
                     <button id="nextBtn" class="p-1 opacity-50 hover:opacity-100 transition-opacity">
-                        <svg class="w-8 h-8" fill="currentColor" viewBox="0 0 20 20"><path d="M11.555 14.832A1 1 0 0110 14v-2.798l-5.445 3.63A1 1 0 013 14V6a1 1 0 011.555-.832L10 8.798V6a1 1 0 011.555-.832l6 4a1 1 0 010 1.664l-6 4z" transform="rotate(180 10 10)"/></svg>
+                        <svg class="w-7 h-7" fill="currentColor" viewBox="0 0 20 20"><path d="M11.555 14.832A1 1 0 0110 14v-2.798l-5.445 3.63A1 1 0 013 14V6a1 1 0 011.555-.832L10 8.798V6a1 1 0 011.555-.832l6 4a1 1 0 010 1.664l-6 4z" transform="rotate(180 10 10)"/></svg>
                     </button>
                 </div>
 
                 <!-- Seletor de Velocidade -->
-                <div class="flex items-center gap-4 bg-black/10 px-4 py-2 rounded-xl border border-white/5">
-                    <span class="text-[10px] font-bold opacity-50 uppercase tracking-widest">Velocidade</span>
+                <div class="flex items-center gap-3 bg-black/10 px-3 py-2 rounded-xl border border-white/5">
+                    <span class="text-[9px] font-bold opacity-50 uppercase tracking-widest hidden xs:block">Velocidade</span>
                     <select id="speedSelect" class="bg-amber-500 text-black font-black rounded-lg px-2 py-1 text-sm cursor-pointer outline-none">
                         <option value="0.5">0.5x</option>
+                        <option value="0.75">0.75x</option>
                         <option value="1" selected>1.0x</option>
+                        <option value="1.25">1.25x</option>
                         <option value="1.5">1.5x</option>
                         <option value="2">2.0x</option>
                         <option value="2.5">2.5x</option>
@@ -239,13 +241,10 @@
             const voices = window.speechSynthesis.getVoices();
             if (voices.length === 0) return null;
 
-            // Busca por nomes comuns de vozes brasileiras no iOS/Chrome
             const targetNames = ['Luciana', 'Daniel', 'Joana', 'Felipe', 'Maria', 'Google português do Brasil'];
             let bestVoice = voices.find(v => targetNames.some(name => v.name.includes(name)) && (v.lang.includes('BR') || v.lang === 'pt-BR'));
 
             if (!bestVoice) bestVoice = voices.find(v => v.lang === 'pt-BR' || v.lang === 'pt_BR');
-            
-            // Exclui Portugal (PT) se houver outra opção de PT
             if (!bestVoice) bestVoice = voices.find(v => v.lang.startsWith('pt') && !v.lang.includes('PT'));
 
             return bestVoice;
@@ -278,7 +277,15 @@
                 }
             };
             startQuizBtn.onclick = startQuiz;
-            speedSelect.onchange = () => { if(isPlaying) { const idx = currentSentenceIdx; stopSpeech(); startSpeech(idx); } };
+            
+            // Lógica de velocidade aprimorada: reinicia frase atual na nova velocidade
+            speedSelect.onchange = () => { 
+                if(isPlaying) { 
+                    const idx = currentSentenceIdx; 
+                    stopSpeech(); 
+                    startSpeech(idx); 
+                } 
+            };
         }
 
         function setTheme(mode) {
