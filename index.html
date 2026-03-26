@@ -7,6 +7,7 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         :root {
+            /* Modo Noite */
             --bg-main: #1a1a1b;
             --text-main: #e5e7eb;
             --bg-sidebar: #121213;
@@ -18,6 +19,7 @@
         }
 
         .theme-day {
+            /* Modo Dia */
             --bg-main: #f5f5dc; 
             --text-main: #2d2d2e; 
             --bg-sidebar: #ebebd0;
@@ -28,16 +30,6 @@
             --card-bg: #efefd5;
         }
 
-        /* Correção para iPhone: h-screen substituído por dvh (Dynamic Viewport Height) */
-        .app-container {
-            height: 100vh;
-            height: 100dvh;
-            display: flex;
-            flex-direction: column;
-            overflow: hidden;
-            background-color: var(--bg-main);
-        }
-
         body {
             background-color: var(--bg-main);
             color: var(--text-main);
@@ -46,6 +38,13 @@
             -webkit-tap-highlight-color: transparent;
             margin: 0;
             overflow: hidden;
+        }
+
+        .app-container {
+            height: 100vh;
+            height: 100dvh;
+            display: flex;
+            flex-direction: column;
         }
         
         .highlight {
@@ -60,22 +59,25 @@
             max-width: 900px;
             margin: 0 auto;
             line-height: 1.6;
+            font-size: 1.25rem; 
         }
 
         #topic-title {
-            font-size: 2em;
+            font-size: 2.2em;
             margin-bottom: 1.5rem;
             font-weight: 800;
             line-height: 1.2;
         }
 
+        #text-body {
+            font-size: 1.1em;
+        }
+
         .control-bar {
             background-color: var(--bg-controls);
             border-top: 1px solid var(--border-color);
-            /* Garante que a barra fique visível acima da área segura do iOS */
             padding-bottom: calc(env(safe-area-inset-bottom) + 0.5rem);
             padding-top: 0.75rem;
-            z-index: 100;
         }
 
         .sidebar {
@@ -83,21 +85,27 @@
             border-right: 1px solid var(--border-color);
         }
 
+        header {
+            border-bottom: 1px solid var(--border-color);
+            padding-top: env(safe-area-inset-top);
+        }
+
         .quiz-card {
             background-color: var(--card-bg);
             border: 1px solid var(--border-color);
             border-radius: 1rem;
-            padding: 1.5rem;
-            margin-top: 1.5rem;
+            padding: 2rem;
+            margin-top: 2rem;
         }
 
         .option-btn {
             width: 100%;
             text-align: left;
-            padding: 0.8rem;
+            padding: 1rem;
             margin-top: 0.5rem;
             border-radius: 0.5rem;
             border: 1px solid var(--border-color);
+            transition: all 0.2s;
         }
 
         .correct { background-color: #10b981 !important; color: white !important; }
@@ -106,6 +114,8 @@
         .no-scrollbar::-webkit-scrollbar { display: none; }
         .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
         
+        button:active { transform: scale(0.95); }
+
         .sentence-item {
             transition: background-color 0.2s ease;
             cursor: pointer;
@@ -113,29 +123,29 @@
         }
     </style>
 </head>
-<body>
+<body class="h-screen flex flex-col overflow-hidden">
 
     <div class="app-container">
-        <!-- Header -->
-        <header class="p-3 flex justify-between items-center shrink-0 border-b border-white/10" style="padding-top: calc(env(safe-area-inset-top) + 0.75rem)">
-            <div class="flex items-center gap-3">
+        <!-- Header: Título, Temas e Zoom -->
+        <header class="p-4 flex flex-wrap justify-between items-center shrink-0 gap-4">
+            <div class="flex items-center gap-4">
                 <button id="menuBtn" class="p-2 bg-black/10 rounded-lg md:hidden">☰</button>
-                <h1 class="text-lg font-bold text-amber-500 tracking-tighter">StudyFlow</h1>
+                <h1 class="text-xl font-bold text-amber-500 tracking-tighter">StudyFlow</h1>
             </div>
 
             <div class="flex items-center gap-2">
-                <button onclick="setTheme('day')" class="p-2 bg-[#f5f5dc] text-[#2d2d2e] rounded-lg text-xs font-bold border border-black/10">☀️</button>
-                <button onclick="setTheme('night')" class="p-2 bg-[#2d2d2e] text-[#e5e7eb] rounded-lg text-xs font-bold border border-white/10">🌙</button>
-                <div class="w-px h-5 bg-zinc-600 mx-1"></div>
-                <button onclick="changeZoom(-0.15)" class="px-3 py-1 bg-black/10 rounded-lg font-bold text-sm border border-zinc-500/30">A-</button>
-                <button onclick="changeZoom(0.15)" class="px-3 py-1 bg-black/10 rounded-lg font-bold text-sm border border-zinc-500/30">A+</button>
+                <button onclick="setTheme('day')" class="px-3 py-2 bg-[#f5f5dc] text-[#2d2d2e] rounded-lg text-xs font-bold border border-black/10">☀️ Dia</button>
+                <button onclick="setTheme('night')" class="px-3 py-2 bg-[#2d2d2e] text-[#e5e7eb] rounded-lg text-xs font-bold border border-white/10">🌙 Noite</button>
+                <div class="w-px h-6 bg-zinc-600 mx-2 hidden sm:block"></div>
+                <button onclick="changeZoom(-0.15)" class="px-4 py-2 bg-black/10 rounded-lg font-bold border border-zinc-500/30">A-</button>
+                <button onclick="changeZoom(0.15)" class="px-4 py-2 bg-black/10 rounded-lg font-bold border border-zinc-500/30">A+</button>
             </div>
         </header>
 
         <div class="flex flex-1 overflow-hidden">
             <!-- Sidebar -->
-            <aside id="sidebar" class="sidebar w-64 p-4 hidden md:block overflow-y-auto no-scrollbar">
-                <h2 class="text-[10px] uppercase opacity-40 font-black mb-4 tracking-widest">Conteúdo</h2>
+            <aside id="sidebar" class="sidebar w-72 p-4 hidden md:block overflow-y-auto no-scrollbar">
+                <h2 class="text-xs uppercase opacity-40 font-bold mb-4 tracking-widest text-zinc-500">Conteúdo</h2>
                 <div id="module-list" class="space-y-4"></div>
             </aside>
 
@@ -148,44 +158,56 @@
                         <div id="text-body" class="space-y-6"></div>
                         
                         <div class="mt-12 flex justify-center">
-                            <button id="startQuizBtn" class="bg-amber-500 text-black px-8 py-4 rounded-2xl font-black text-md shadow-xl hover:scale-105 transition-all">
-                                📝 TESTE DE FIXAÇÃO
+                            <button id="startQuizBtn" class="bg-amber-500 text-black px-10 py-4 rounded-2xl font-black text-lg shadow-xl hover:scale-105 transition-all">
+                                📝 TESTAR CONHECIMENTO (QUIZ)
                             </button>
                         </div>
                     </div>
 
                     <div id="quiz-area" class="hidden">
                         <div class="flex justify-between items-center mb-6">
-                            <h2 class="text-xl font-extrabold">Simulado</h2>
-                            <button onclick="exitQuiz()" class="text-xs opacity-60 underline">Voltar</button>
+                            <h2 class="text-2xl font-extrabold">Simulado</h2>
+                            <button onclick="exitQuiz()" class="text-sm opacity-60 hover:opacity-100 underline">Voltar para leitura</button>
                         </div>
                         <div id="quiz-content" class="quiz-card shadow-2xl"></div>
                     </div>
                 </div>
-                <!-- Espaçador final para garantir que o texto não fique atrás da barra -->
-                <div class="h-40"></div> 
+                <div class="h-48"></div> 
             </main>
         </div>
 
-        <!-- Barra de Áudio (Sempre Visível no Rodapé) -->
-        <footer class="control-bar px-6 shrink-0 shadow-2xl">
-            <div class="max-w-4xl mx-auto flex items-center justify-between gap-4">
+        <!-- Footer: Player e Velocidade -->
+        <footer class="control-bar px-6 shrink-0 z-10 shadow-2xl">
+            <div class="max-w-4xl mx-auto flex flex-col md:flex-row items-center justify-between gap-6">
                 
-                <div class="flex items-center gap-6">
-                    <button id="prevBtn" class="p-1 opacity-50"><svg class="w-7 h-7" fill="currentColor" viewBox="0 0 20 20"><path d="M8.445 14.832A1 1 0 0010 14v-2.798l5.445 3.63A1 1 0 0017 14V6a1 1 0 00-1.555-.832L10 8.798V6a1 1 0 00-1.555-.832l-6 4a1 1 0 000 1.664l6 4z"/></svg></button>
+                <!-- Controles de Reprodução -->
+                <div class="flex items-center gap-8">
+                    <button id="prevBtn" class="p-1 opacity-50 hover:opacity-100 transition-opacity">
+                        <svg class="w-8 h-8" fill="currentColor" viewBox="0 0 20 20"><path d="M8.445 14.832A1 1 0 0010 14v-2.798l5.445 3.63A1 1 0 0017 14V6a1 1 0 00-1.555-.832L10 8.798V6a1 1 0 00-1.555-.832l-6 4a1 1 0 000 1.664l6 4z"/></svg>
+                    </button>
                     
-                    <button id="playPauseBtn" class="bg-amber-500 text-black p-3 rounded-full shadow-lg active:scale-90">
-                        <svg id="playIcon" class="w-7 h-7" fill="currentColor" viewBox="0 0 20 20"><path d="M4.018 14L14.41 8 4.018 2z"/></svg>
-                        <svg id="pauseIcon" class="w-7 h-7 hidden" fill="currentColor" viewBox="0 0 20 20"><path d="M6 4h4v12H6V4zm6 0h4v12h-4V4z"/></svg>
+                    <button id="playPauseBtn" class="bg-amber-500 text-black p-3.5 rounded-full hover:bg-amber-400 shadow-xl transition-all active:scale-90">
+                        <svg id="playIcon" class="w-8 h-8" fill="currentColor" viewBox="0 0 20 20"><path d="M4.018 14L14.41 8 4.018 2z"/></svg>
+                        <svg id="pauseIcon" class="w-8 h-8 hidden" fill="currentColor" viewBox="0 0 20 20"><path d="M6 4h4v12H6V4zm6 0h4v12h-4V4z"/></svg>
                     </button>
 
-                    <button id="nextBtn" class="p-1 opacity-50"><svg class="w-7 h-7" fill="currentColor" viewBox="0 0 20 20"><path d="M11.555 14.832A1 1 0 0110 14v-2.798l-5.445 3.63A1 1 0 013 14V6a1 1 0 011.555-.832L10 8.798V6a1 1 0 011.555-.832l6 4a1 1 0 010 1.664l-6 4z" transform="rotate(180 10 10)"/></svg></button>
+                    <button id="nextBtn" class="p-1 opacity-50 hover:opacity-100 transition-opacity">
+                        <svg class="w-8 h-8" fill="currentColor" viewBox="0 0 20 20"><path d="M11.555 14.832A1 1 0 0110 14v-2.798l-5.445 3.63A1 1 0 013 14V6a1 1 0 011.555-.832L10 8.798V6a1 1 0 011.555-.832l6 4a1 1 0 010 1.664l-6 4z" transform="rotate(180 10 10)"/></svg>
+                    </button>
                 </div>
 
-                <div class="flex items-center gap-2 bg-black/20 p-2 rounded-xl border border-white/5">
-                    <span class="text-[9px] font-bold opacity-50 uppercase">Vel</span>
-                    <select id="speedSelect" class="bg-amber-500 text-black font-black rounded px-1 py-1 text-xs cursor-pointer outline-none">
-                        <option value="0.5">0.5x</option><option value="1" selected>1.0x</option><option value="1.5">1.5x</option><option value="2">2.0x</option><option value="3">3.0x</option><option value="4">4.0x</option>
+                <!-- Seletor de Velocidade -->
+                <div class="flex items-center gap-4 bg-black/10 px-4 py-2 rounded-xl border border-white/5">
+                    <span class="text-[10px] font-bold opacity-50 uppercase tracking-widest">Velocidade</span>
+                    <select id="speedSelect" class="bg-amber-500 text-black font-black rounded-lg px-2 py-1 text-sm cursor-pointer outline-none">
+                        <option value="0.5">0.5x</option>
+                        <option value="1" selected>1.0x</option>
+                        <option value="1.5">1.5x</option>
+                        <option value="2">2.0x</option>
+                        <option value="2.5">2.5x</option>
+                        <option value="3">3.0x</option>
+                        <option value="3.5">3.5x</option>
+                        <option value="4">4.0x</option>
                     </select>
                 </div>
             </div>
@@ -199,33 +221,52 @@
                 topics: [
                     { 
                         title: "Fundamentos de Estudo Ativo", 
-                        content: "O áudio agora está configurado para buscar a voz brasileira. O estudo otimizado requer ferramentas que utilizem a codificação dual do cérebro. Ao ouvir e ler simultaneamente, a retenção aumenta drasticamente. O StudyFlow utiliza este princípio através do realce dinâmico de frases. Podes agora ajustar a velocidade até quatro vezes para revisões super rápidas.",
+                        content: "O áudio agora está configurado para buscar especificamente a voz brasileira, ignorando o sotaque de Portugal. O estudo otimizado requer ferramentas que utilizem a codificação dual do cérebro. Ao ouvir e ler simultaneamente no StudyFlow, a tua retenção de conteúdo na faculdade será muito maior. Podes ajustar a velocidade até quatro vezes e alternar entre os modos dia e noite para maior conforto.",
                         questions: [
-                            { q: "Qual o sotaque atual do sistema?", options: ["Português de Portugal", "Português do Brasil", "Espanhol", "Inglês"], correct: 1, explanation: "O código foi atualizado para priorizar vozes do Brasil (pt-BR)." }
+                            { q: "Qual o sotaque configurado como prioritário?", options: ["Português de Portugal", "Português do Brasil", "Espanhol", "Inglês"], correct: 1, explanation: "O código busca vozes brasileiras (pt-BR) como prioridade no sistema de síntese de voz." },
+                            { q: "Qual o limite de velocidade disponível?", options: ["2.0x", "3.0x", "4.0x", "5.0x"], correct: 2, explanation: "O StudyFlow permite acelerar a leitura até 4.0x para revisões ultra-rápidas." }
                         ]
                     }
                 ]
             }
         ];
 
-        let currentModuleIdx = 0, currentTopicIdx = 0, zoomLevel = 1.1, isPlaying = false, utterance = null, currentSentences = [], currentSentenceIdx = 0, quizIndex = 0, quizScore = 0, quizAnswered = false;
+        let currentModuleIdx = 0, currentTopicIdx = 0, zoomLevel = 1.15, isPlaying = false, utterance = null, currentSentences = [], currentSentenceIdx = 0, quizIndex = 0, quizScore = 0, quizAnswered = false;
         let selectedVoice = null;
 
-        const textBody = document.getElementById('text-body'), topicTitle = document.getElementById('topic-title'), moduleList = document.getElementById('module-list'), playPauseBtn = document.getElementById('playPauseBtn'), speedSelect = document.getElementById('speedSelect'), playIcon = document.getElementById('playIcon'), pauseIcon = document.getElementById('pauseIcon'), startQuizBtn = document.getElementById('startQuizBtn');
-
-        function loadVoices() {
+        // MOTOR DE VOZ BRASILEIRA
+        function findBrazilianVoice() {
             const voices = window.speechSynthesis.getVoices();
-            selectedVoice = voices.find(v => v.lang.includes('BR') || v.name.includes('Brazil') || v.name.includes('Luciana') || v.name.includes('Felipe'));
-            if (!selectedVoice) selectedVoice = voices.find(v => v.lang === 'pt-BR');
+            if (voices.length === 0) return null;
+
+            // Busca por nomes comuns de vozes brasileiras no iOS/Chrome
+            const targetNames = ['Luciana', 'Daniel', 'Joana', 'Felipe', 'Maria', 'Google português do Brasil'];
+            let bestVoice = voices.find(v => targetNames.some(name => v.name.includes(name)) && (v.lang.includes('BR') || v.lang === 'pt-BR'));
+
+            if (!bestVoice) bestVoice = voices.find(v => v.lang === 'pt-BR' || v.lang === 'pt_BR');
+            
+            // Exclui Portugal (PT) se houver outra opção de PT
+            if (!bestVoice) bestVoice = voices.find(v => v.lang.startsWith('pt') && !v.lang.includes('PT'));
+
+            return bestVoice;
         }
 
-        window.speechSynthesis.onvoiceschanged = loadVoices;
+        function loadVoices() {
+            selectedVoice = findBrazilianVoice();
+        }
+
+        if (window.speechSynthesis.onvoiceschanged !== undefined) {
+            window.speechSynthesis.onvoiceschanged = loadVoices;
+        }
+
+        const textBody = document.getElementById('text-body'), topicTitle = document.getElementById('topic-title'), moduleList = document.getElementById('module-list'), playPauseBtn = document.getElementById('playPauseBtn'), speedSelect = document.getElementById('speedSelect'), playIcon = document.getElementById('playIcon'), pauseIcon = document.getElementById('pauseIcon'), startQuizBtn = document.getElementById('startQuizBtn');
 
         function init() {
             loadVoices();
             renderSidebar();
             loadTopic(0, 0);
             applyZoom();
+            
             playPauseBtn.onclick = toggleSpeech;
             document.getElementById('prevBtn').onclick = prevTopic;
             document.getElementById('nextBtn').onclick = nextTopic;
@@ -233,7 +274,7 @@
                 const sidebar = document.getElementById('sidebar');
                 sidebar.classList.toggle('hidden');
                 if(!sidebar.classList.contains('hidden')) {
-                    sidebar.style.position = 'fixed'; sidebar.style.zIndex = '50'; sidebar.style.height = '100%';
+                    sidebar.style.position = 'fixed'; sidebar.style.zIndex = '50'; sidebar.style.height = '100dvh';
                 }
             };
             startQuizBtn.onclick = startQuiz;
@@ -250,9 +291,9 @@
             curriculum.forEach((mod, mIdx) => {
                 const modDiv = document.createElement('div');
                 modDiv.className = 'mb-6';
-                modDiv.innerHTML = `<h3 class="text-[10px] font-black opacity-40 mb-2 tracking-widest uppercase">${mod.module}</h3>`;
+                modDiv.innerHTML = `<h3 class="text-[10px] font-black opacity-30 mb-2 tracking-widest uppercase">${mod.module}</h3>`;
                 const ul = document.createElement('ul');
-                ul.className = 'space-y-1 border-l border-white/10 ml-1';
+                ul.className = 'space-y-1 border-l border-white/5 ml-1';
                 mod.topics.forEach((top, tIdx) => {
                     const li = document.createElement('li');
                     const isActive = mIdx === currentModuleIdx && tIdx === currentTopicIdx;
@@ -302,7 +343,7 @@
             const topic = curriculum[currentModuleIdx].topics[currentTopicIdx];
             const quizContent = document.getElementById('quiz-content');
             quizAnswered = false;
-            if (!topic.questions || topic.questions.length === 0) { quizContent.innerHTML = "<p>Sem questões.</p>"; return; }
+            if (!topic.questions || topic.questions.length === 0) { quizContent.innerHTML = "<p>Sem simulado disponível.</p>"; return; }
             if (quizIndex >= topic.questions.length) { showQuizResult(); return; }
             const qData = topic.questions[quizIndex];
             quizContent.innerHTML = `
@@ -310,8 +351,8 @@
                 <div class="space-y-2">${qData.options.map((opt, i) => `<button class="option-btn" onclick="checkAnswer(${i})">${opt}</button>`).join('')}</div>
                 <div id="quiz-feedback" class="mt-4 hidden p-3 rounded bg-black/5 border border-white/5">
                     <p id="feedback-text" class="font-bold mb-1"></p>
-                    <p class="text-xs opacity-80 italic">${qData.explanation}</p>
-                    <button onclick="nextQuestion()" class="mt-4 w-full bg-amber-500 text-black py-2 rounded font-bold">PRÓXIMA</button>
+                    <p class="text-xs opacity-70 italic">${qData.explanation}</p>
+                    <button onclick="nextQuestion()" class="mt-4 w-full bg-amber-500 text-black py-2 rounded-lg font-bold">PRÓXIMA</button>
                 </div>`;
         }
 
@@ -319,13 +360,12 @@
             if (quizAnswered) return;
             quizAnswered = true;
             const qData = curriculum[currentModuleIdx].topics[currentTopicIdx].questions[quizIndex];
-            const buttons = document.querySelectorAll('.option-btn');
-            buttons.forEach((btn, i) => {
+            document.querySelectorAll('.option-btn').forEach((btn, i) => {
                 btn.disabled = true;
                 if (i === qData.correct) btn.classList.add('correct');
                 else if (i === selectedIdx) btn.classList.add('incorrect');
             });
-            if (selectedIdx === qData.correct) { quizScore++; document.getElementById('feedback-text').innerText = "✓ Correto"; }
+            if (selectedIdx === qData.correct) { quizScore++; document.getElementById('feedback-text').innerText = "✓ Correto!"; }
             else { document.getElementById('feedback-text').innerText = "✕ Incorreto"; }
             document.getElementById('quiz-feedback').classList.remove('hidden');
         }
@@ -333,16 +373,15 @@
         function nextQuestion() { quizIndex++; showQuestion(); }
 
         function showQuizResult() {
-            document.getElementById('quiz-content').innerHTML = `<div class="text-center py-6"><h3 class="text-xl font-bold">Fim!</h3><div class="text-5xl font-black text-amber-500 my-4">${Math.round((quizScore/curriculum[currentModuleIdx].topics[currentTopicIdx].questions.length)*100)}%</div><button onclick="exitQuiz()" class="bg-amber-500 text-black px-8 py-2 rounded-xl font-bold">Voltar</button></div>`;
+            const total = curriculum[currentModuleIdx].topics[currentTopicIdx].questions.length;
+            document.getElementById('quiz-content').innerHTML = `<div class="text-center py-6"><h3 class="text-xl font-bold">Fim do Teste</h3><div class="text-5xl font-black text-amber-500 my-4">${Math.round((quizScore/total)*100)}%</div><p class="mb-6 opacity-60">Acertos: ${quizScore}/${total}</p><button onclick="exitQuiz()" class="bg-amber-500 text-black px-10 py-3 rounded-xl font-bold shadow-lg">CONCLUIR</button></div>`;
         }
 
         function toggleSpeech() { isPlaying ? pauseSpeech() : startSpeech(currentSentenceIdx); }
-        
         function startSpeech(startIndex) {
             if (window.speechSynthesis.paused && utterance) { window.speechSynthesis.resume(); isPlaying = true; updateIcons(); return; }
             stopSpeech(); isPlaying = true; updateIcons(); readSentence(startIndex);
         }
-
         function readSentence(index) {
             if (index >= currentSentences.length) { stopSpeech(); return; }
             currentSentenceIdx = index;
@@ -350,14 +389,15 @@
             const activeSpan = document.getElementById(`sentence-${index}`);
             if(activeSpan) { activeSpan.classList.add('highlight'); activeSpan.scrollIntoView({ behavior: 'smooth', block: 'center' }); }
             
+            window.speechSynthesis.cancel();
             utterance = new SpeechSynthesisUtterance(currentSentences[index]);
+            if (!selectedVoice) selectedVoice = findBrazilianVoice();
             if (selectedVoice) utterance.voice = selectedVoice;
             utterance.lang = 'pt-BR';
             utterance.rate = parseFloat(speedSelect.value);
             utterance.onend = () => { if (isPlaying) readSentence(index + 1); };
             window.speechSynthesis.speak(utterance);
         }
-
         function pauseSpeech() { window.speechSynthesis.pause(); isPlaying = false; updateIcons(); }
         function stopSpeech() { window.speechSynthesis.cancel(); isPlaying = false; updateIcons(); }
         function updateIcons() { playIcon.classList.toggle('hidden', isPlaying); pauseIcon.classList.toggle('hidden', !isPlaying); }
