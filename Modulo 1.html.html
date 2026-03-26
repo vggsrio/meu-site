@@ -1,0 +1,459 @@
+<!DOCTYPE html>
+<html lang="pt-pt">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>StudyFlow - Otimizador de Estudos</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        :root {
+            /* Modo Noite (Padrão) */
+            --bg-main: #1a1a1b;
+            --text-main: #e5e7eb;
+            --bg-sidebar: #121213;
+            --bg-controls: #2d2d2e;
+            --border-color: #404041;
+            --highlight-bg: #fbbf24;
+            --highlight-text: #000;
+            --card-bg: #262627;
+        }
+
+        .theme-day {
+            /* Modo Dia */
+            --bg-main: #f5f5dc; 
+            --text-main: #2d2d2e; 
+            --bg-sidebar: #ebebd0;
+            --bg-controls: #e1e1c7;
+            --border-color: #d1d1b5;
+            --highlight-bg: #d97706;
+            --highlight-text: #fff;
+            --card-bg: #efefd5;
+        }
+
+        body {
+            background-color: var(--bg-main);
+            color: var(--text-main);
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            transition: background-color 0.3s ease, color 0.3s ease;
+        }
+        
+        .highlight {
+            background-color: var(--highlight-bg);
+            color: var(--highlight-text);
+            border-radius: 4px;
+            padding: 2px 4px;
+        }
+
+        .reader-container {
+            max-width: 95%; /* Usa 95% da largura da tela */
+            margin: 0 auto;
+            line-height: 1.6;
+            font-size: 1.25rem; 
+        }
+
+        #topic-title {
+            font-size: 2.2em;
+            margin-bottom: 1.5rem;
+            font-weight: 800;
+            line-height: 1.2;
+        }
+
+        #text-body {
+            font-size: 1.1em;
+        }
+
+        .control-bar {
+            background-color: var(--bg-controls);
+            border-top: 1px solid var(--border-color);
+        }
+
+        .sidebar {
+            background-color: var(--bg-sidebar);
+            border-right: 1px solid var(--border-color);
+        }
+
+        .quiz-card {
+            background-color: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 1rem;
+            padding: 2rem;
+            margin-top: 2rem;
+        }
+
+        .option-btn {
+            width: 100%;
+            text-align: left;
+            padding: 1rem;
+            margin-top: 0.5rem;
+            border-radius: 0.5rem;
+            border: 1px solid var(--border-color);
+            transition: all 0.2s;
+        }
+
+        .option-btn:hover:not(:disabled) {
+            background-color: var(--highlight-bg);
+            color: var(--highlight-text);
+        }
+
+        .correct { background-color: #10b981 !important; color: white !important; }
+        .incorrect { background-color: #ef4444 !important; color: white !important; }
+
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+        
+        button:active { transform: scale(0.95); }
+
+        .sentence-item {
+            transition: background-color 0.2s ease;
+            cursor: pointer;
+            display: inline;
+        }
+
+        .btn-header {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            padding: 6px 10px;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 0.8rem;
+            border: 1px solid rgba(128,128,128,0.3);
+        }
+    </style>
+</head>
+<body class="h-screen flex flex-col overflow-hidden">
+
+    <!-- Cabeçalho -->
+    <header class="p-3 flex flex-wrap justify-between items-center shrink-0 gap-3 border-b border-white/10">
+        <div class="flex items-center gap-3">
+            <button id="menuBtn" class="p-2 bg-black/10 rounded-lg md:hidden">☰</button>
+            <h1 class="text-lg font-bold text-amber-500 tracking-tighter">StudyFlow</h1>
+        </div>
+
+        <div class="flex items-center gap-2">
+            <!-- Modos -->
+            <button onclick="setTheme('day')" class="btn-header bg-[#f5f5dc] text-[#2d2d2e]">☀️ Dia</button>
+            <button onclick="setTheme('night')" class="btn-header bg-[#2d2d2e] text-[#e5e7eb]">🌙 Noite</button>
+            
+            <div class="w-px h-5 bg-zinc-600 mx-1 hidden sm:block"></div>
+            
+            <!-- Zoom -->
+            <button onclick="changeZoom(-0.15)" class="px-3 py-1 bg-black/10 rounded-lg font-bold">A-</button>
+            <button onclick="changeZoom(0.15)" class="px-3 py-1 bg-black/10 rounded-lg font-bold">A+</button>
+        </div>
+    </header>
+
+    <div class="flex flex-1 overflow-hidden">
+        <!-- Menu Lateral -->
+        <aside id="sidebar" class="sidebar w-64 p-4 hidden md:block overflow-y-auto no-scrollbar">
+            <h2 class="text-[10px] uppercase opacity-40 font-black mb-4 tracking-widest">Conteúdo do Curso</h2>
+            <div id="module-list" class="space-y-4"></div>
+        </aside>
+
+        <!-- Área de Leitura Principal -->
+        <main class="flex-1 overflow-y-auto p-4 md:p-10 relative no-scrollbar" id="reader-scroll">
+            <div class="reader-container" id="content-display">
+                
+                <div id="reading-area">
+                    <h2 id="topic-title" class="border-l-4 border-amber-500 pl-4">Carregando...</h2>
+                    <div id="text-body" class="space-y-6"></div>
+                    
+                    <div class="mt-16 flex justify-center">
+                        <button id="startQuizBtn" class="bg-amber-500 text-black px-10 py-4 rounded-2xl font-black text-lg shadow-xl hover:scale-105 transition-all">
+                            📝 FAZER SIMULADO DE FIXAÇÃO
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Área de Simulado (Escondida por padrão) -->
+                <div id="quiz-area" class="hidden">
+                    <div class="flex justify-between items-center mb-6">
+                        <h2 class="text-2xl font-extrabold">Simulado</h2>
+                        <button onclick="exitQuiz()" class="text-sm opacity-60 hover:opacity-100 underline">Voltar para a leitura</button>
+                    </div>
+                    <div id="quiz-content" class="quiz-card shadow-2xl"></div>
+                </div>
+            </div>
+            <div class="h-48"></div> 
+        </main>
+    </div>
+
+    <!-- Barra de Controles (Rodapé) -->
+    <footer class="control-bar p-3 md:p-4 shrink-0 z-10 shadow-2xl">
+        <div class="max-w-[95%] mx-auto flex flex-col md:flex-row items-center justify-between gap-4">
+            
+            <!-- Play/Pause Menor -->
+            <div class="flex items-center gap-5">
+                <button id="prevBtn" class="p-1 opacity-50 hover:opacity-100">
+                    <svg class="w-7 h-7" fill="currentColor" viewBox="0 0 20 20"><path d="M8.445 14.832A1 1 0 0010 14v-2.798l5.445 3.63A1 1 0 0017 14V6a1 1 0 00-1.555-.832L10 8.798V6a1 1 0 00-1.555-.832l-6 4a1 1 0 000 1.664l6 4z"/></svg>
+                </button>
+                
+                <button id="playPauseBtn" class="bg-amber-500 text-black p-2.5 rounded-full hover:bg-amber-400 shadow-lg transition-all active:scale-90">
+                    <svg id="playIcon" class="w-7 h-7" fill="currentColor" viewBox="0 0 20 20"><path d="M4.018 14L14.41 8 4.018 2z"/></svg>
+                    <svg id="pauseIcon" class="w-7 h-7 hidden" fill="currentColor" viewBox="0 0 20 20"><path d="M6 4h4v12H6V4zm6 0h4v12h-4V4z"/></svg>
+                </button>
+
+                <button id="nextBtn" class="p-1 opacity-50 hover:opacity-100">
+                    <svg class="w-7 h-7" fill="currentColor" viewBox="0 0 20 20"><path d="M11.555 14.832A1 1 0 0110 14v-2.798l-5.445 3.63A1 1 0 013 14V6a1 1 0 011.555-.832L10 8.798V6a1 1 0 011.555-.832l6 4a1 1 0 010 1.664l-6 4z" transform="rotate(180 10 10)"/></svg>
+                </button>
+            </div>
+
+            <!-- Velocidade até 4x -->
+            <div class="flex items-center gap-3 bg-black/10 p-2 rounded-xl border border-white/10">
+                <span class="text-[10px] font-bold opacity-50 uppercase tracking-tighter">Velocidade</span>
+                <select id="speedSelect" class="bg-amber-500 text-black font-black rounded-lg px-2 py-1 text-xs cursor-pointer outline-none">
+                    <option value="0.5">0.5x</option>
+                    <option value="1" selected>1.0x</option>
+                    <option value="1.5">1.5x</option>
+                    <option value="2">2.0x</option>
+                    <option value="2.5">2.5x</option>
+                    <option value="3">3.0x</option>
+                    <option value="3.5">3.5x</option>
+                    <option value="4">4.0x</option>
+                </select>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        // CONTEÚDO (Substitui aqui pela tua apostila)
+        const curriculum = [
+            {
+                module: "Módulo 01: Introdução",
+                topics: [
+                    { 
+                        title: "Fundamentos de Estudo Ativo", 
+                        content: "O estudo otimizado requer ferramentas que utilizem a codificação dual do cérebro. Ao ouvir e ler simultaneamente, a retenção aumenta drasticamente. O StudyFlow utiliza este princípio através do realce dinâmico de frases. Podes agora ajustar a velocidade até quatro vezes para revisões super rápidas e alternar entre o modo dia e noite conforme a iluminação do local onde estás.",
+                        questions: [
+                            {
+                                q: "Qual o limite máximo de velocidade de leitura no StudyFlow?",
+                                options: ["2.0x", "3.0x", "3.5x", "4.0x"],
+                                correct: 3,
+                                explanation: "O aplicativo permite acelerar até 4.0x para estudantes avançados que desejam revisões rápidas."
+                            },
+                            {
+                                q: "Para que serve o realce (highlight) amarelo no texto?",
+                                options: ["Para decorar palavras difíceis", "Para sincronizar a visão com o áudio que está a ser lido", "Para indicar erros ortográficos", "Para traduzir o texto"],
+                                correct: 1,
+                                explanation: "O realce ajuda a focar a atenção na frase exata que está a ser processada pelo sintetizador de voz."
+                            }
+                            // Adiciona até 15 questões seguindo este formato
+                        ]
+                    }
+                ]
+            }
+        ];
+
+        let currentModuleIdx = 0;
+        let currentTopicIdx = 0;
+        let zoomLevel = 1.25;
+        let isPlaying = false;
+        let utterance = null;
+        let currentSentences = [];
+        let currentSentenceIdx = 0;
+
+        // Quiz State
+        let quizIndex = 0;
+        let quizScore = 0;
+        let quizAnswered = false;
+
+        const textBody = document.getElementById('text-body');
+        const topicTitle = document.getElementById('topic-title');
+        const moduleList = document.getElementById('module-list');
+        const playPauseBtn = document.getElementById('playPauseBtn');
+        const speedSelect = document.getElementById('speedSelect');
+        const playIcon = document.getElementById('playIcon');
+        const pauseIcon = document.getElementById('pauseIcon');
+        const startQuizBtn = document.getElementById('startQuizBtn');
+
+        function init() {
+            renderSidebar();
+            loadTopic(0, 0);
+            applyZoom();
+            
+            playPauseBtn.onclick = toggleSpeech;
+            document.getElementById('prevBtn').onclick = prevTopic;
+            document.getElementById('nextBtn').onclick = nextTopic;
+            document.getElementById('menuBtn').onclick = () => document.getElementById('sidebar').classList.toggle('hidden');
+            startQuizBtn.onclick = startQuiz;
+            
+            speedSelect.onchange = () => { if(isPlaying) { const idx = currentSentenceIdx; stopSpeech(); startSpeech(idx); } };
+        }
+
+        function setTheme(mode) {
+            if (mode === 'day') document.body.classList.add('theme-day');
+            else document.body.classList.remove('theme-day');
+        }
+
+        function renderSidebar() {
+            moduleList.innerHTML = '';
+            curriculum.forEach((mod, mIdx) => {
+                const modDiv = document.createElement('div');
+                modDiv.className = 'mb-6';
+                modDiv.innerHTML = `<h3 class="text-[10px] font-black opacity-40 mb-2 tracking-widest uppercase">${mod.module}</h3>`;
+                const ul = document.createElement('ul');
+                ul.className = 'space-y-1 border-l border-white/10 ml-1';
+                mod.topics.forEach((top, tIdx) => {
+                    const li = document.createElement('li');
+                    const isActive = mIdx === currentModuleIdx && tIdx === currentTopicIdx;
+                    li.className = `cursor-pointer text-xs p-2 rounded-r-lg transition-all ${isActive ? 'text-amber-500 bg-amber-500/10 border-l-2 border-amber-500 font-bold' : 'opacity-60 hover:opacity-100 hover:bg-black/5'}`;
+                    li.innerText = top.title;
+                    li.onclick = () => { exitQuiz(); loadTopic(mIdx, tIdx); };
+                    ul.appendChild(li);
+                });
+                modDiv.appendChild(ul);
+                moduleList.appendChild(modDiv);
+            });
+        }
+
+        function loadTopic(mIdx, tIdx) {
+            stopSpeech();
+            currentModuleIdx = mIdx;
+            currentTopicIdx = tIdx;
+            const topic = curriculum[mIdx].topics[tIdx];
+            topicTitle.innerText = topic.title;
+            
+            // Quebra texto em frases
+            currentSentences = topic.content.match(/[^\.!\?]+[\.!\?]+/g) || [topic.content];
+            
+            textBody.innerHTML = '';
+            currentSentences.forEach((sentence, idx) => {
+                const span = document.createElement('span');
+                span.id = `sentence-${idx}`;
+                span.className = 'sentence-item mr-1';
+                span.innerText = sentence.trim() + ' ';
+                span.onclick = () => { stopSpeech(); startSpeech(idx); };
+                textBody.appendChild(span);
+            });
+            currentSentenceIdx = 0;
+            renderSidebar();
+            if(window.innerWidth < 768) document.getElementById('sidebar').classList.add('hidden');
+            document.getElementById('reader-scroll').scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        // --- SISTEMA DE QUIZ ---
+        function startQuiz() {
+            stopSpeech();
+            document.getElementById('reading-area').classList.add('hidden');
+            document.getElementById('quiz-area').classList.remove('hidden');
+            quizIndex = 0;
+            quizScore = 0;
+            showQuestion();
+        }
+
+        function exitQuiz() {
+            document.getElementById('reading-area').classList.remove('hidden');
+            document.getElementById('quiz-area').classList.add('hidden');
+        }
+
+        function showQuestion() {
+            const topic = curriculum[currentModuleIdx].topics[currentTopicIdx];
+            const quizContent = document.getElementById('quiz-content');
+            quizAnswered = false;
+
+            if (!topic.questions || topic.questions.length === 0) {
+                quizContent.innerHTML = "<p class='text-center opacity-60'>Adiciona questões no código para começar o teste.</p>";
+                return;
+            }
+
+            if (quizIndex >= topic.questions.length) {
+                showQuizResult();
+                return;
+            }
+
+            const qData = topic.questions[quizIndex];
+            let optionsHtml = qData.options.map((opt, i) => `
+                <button class="option-btn text-sm" onclick="checkAnswer(${i})">${opt}</button>
+            `).join('');
+
+            quizContent.innerHTML = `
+                <div class="mb-4 flex justify-between text-[10px] font-bold opacity-40 uppercase tracking-widest">
+                    <span>Questão ${quizIndex + 1} de ${topic.questions.length}</span>
+                    <span>Progresso: ${Math.round((quizIndex / topic.questions.length) * 100)}%</span>
+                </div>
+                <h3 class="text-xl font-bold mb-6">${qData.q}</h3>
+                <div class="space-y-2">${optionsHtml}</div>
+                <div id="quiz-feedback" class="mt-6 p-4 rounded-lg bg-black/5 hidden border border-white/5">
+                    <p id="feedback-text" class="font-black text-lg mb-2"></p>
+                    <p class="text-sm opacity-80 italic">${qData.explanation}</p>
+                    <button onclick="nextQuestion()" class="mt-6 w-full bg-amber-500 text-black py-3 rounded-xl font-bold">PRÓXIMA</button>
+                </div>
+            `;
+        }
+
+        function checkAnswer(selectedIdx) {
+            if (quizAnswered) return;
+            quizAnswered = true;
+
+            const qData = curriculum[currentModuleIdx].topics[currentTopicIdx].questions[quizIndex];
+            const buttons = document.querySelectorAll('.option-btn');
+            const feedback = document.getElementById('quiz-feedback');
+            const feedbackText = document.getElementById('feedback-text');
+
+            buttons.forEach((btn, i) => {
+                btn.disabled = true;
+                if (i === qData.correct) btn.classList.add('correct');
+                else if (i === selectedIdx) btn.classList.add('incorrect');
+            });
+
+            if (selectedIdx === qData.correct) {
+                quizScore++;
+                feedbackText.innerText = "✓ CORRETO";
+                feedbackText.className = "text-green-500 font-black mb-2";
+            } else {
+                feedbackText.innerText = "✕ INCORRETO";
+                feedbackText.className = "text-red-500 font-black mb-2";
+            }
+            feedback.classList.remove('hidden');
+        }
+
+        function nextQuestion() { quizIndex++; showQuestion(); }
+
+        function showQuizResult() {
+            const topic = curriculum[currentModuleIdx].topics[currentTopicIdx];
+            const perc = Math.round((quizScore / topic.questions.length) * 100);
+            document.getElementById('quiz-content').innerHTML = `
+                <div class="text-center py-10">
+                    <h3 class="text-2xl font-black mb-2">RESULTADO</h3>
+                    <div class="text-7xl font-black text-amber-500 mb-6">${perc}%</div>
+                    <p class="text-lg opacity-70 mb-8">Acertaste ${quizScore} de ${topic.questions.length} questões.</p>
+                    <button onclick="exitQuiz()" class="bg-amber-500 text-black px-12 py-4 rounded-2xl font-black shadow-lg">FINALIZAR</button>
+                </div>
+            `;
+        }
+
+        // --- MOTOR DE VOZ ---
+        function toggleSpeech() { isPlaying ? pauseSpeech() : startSpeech(currentSentenceIdx); }
+        function startSpeech(startIndex) {
+            if (window.speechSynthesis.paused && utterance) { window.speechSynthesis.resume(); isPlaying = true; updateIcons(); return; }
+            stopSpeech(); isPlaying = true; updateIcons(); readSentence(startIndex);
+        }
+        function readSentence(index) {
+            if (index >= currentSentences.length) { stopSpeech(); return; }
+            currentSentenceIdx = index;
+            document.querySelectorAll('.sentence-item').forEach(s => s.classList.remove('highlight'));
+            const activeSpan = document.getElementById(`sentence-${index}`);
+            if(activeSpan) { 
+                activeSpan.classList.add('highlight'); 
+                activeSpan.scrollIntoView({ behavior: 'smooth', block: 'center' }); 
+            }
+            utterance = new SpeechSynthesisUtterance(currentSentences[index]);
+            utterance.lang = 'pt-PT';
+            utterance.rate = parseFloat(speedSelect.value);
+            utterance.onend = () => { if (isPlaying) readSentence(index + 1); };
+            window.speechSynthesis.speak(utterance);
+        }
+        function pauseSpeech() { window.speechSynthesis.pause(); isPlaying = false; updateIcons(); }
+        function stopSpeech() { window.speechSynthesis.cancel(); isPlaying = false; updateIcons(); }
+        function updateIcons() { playIcon.classList.toggle('hidden', isPlaying); pauseIcon.classList.toggle('hidden', !isPlaying); }
+        
+        // --- NAVEGAÇÃO E ZOOM ---
+        function nextTopic() { if (currentTopicIdx < curriculum[currentModuleIdx].topics.length - 1) loadTopic(currentModuleIdx, currentTopicIdx + 1); else if (currentModuleIdx < curriculum.length - 1) loadTopic(currentModuleIdx + 1, 0); }
+        function prevTopic() { if (currentTopicIdx > 0) loadTopic(currentModuleIdx, currentTopicIdx - 1); else if (currentModuleIdx > 0) loadTopic(currentModuleIdx - 1, curriculum[currentModuleIdx-1].topics.length - 1); }
+        function applyZoom() { document.getElementById('content-display').style.fontSize = `${zoomLevel}rem`; }
+        function changeZoom(delta) { zoomLevel = Math.min(Math.max(zoomLevel + delta, 0.7), 4.0); applyZoom(); }
+
+        window.onload = init;
+    </script>
+</body>
+</html>
